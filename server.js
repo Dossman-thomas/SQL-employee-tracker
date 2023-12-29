@@ -40,6 +40,8 @@ const init = () => {
         "Add Employee",
         "Update Employee Role",
         "Update Employee Manager",
+        "View Employees by Manager",
+        "View Employees by Department",
         "Exit"
       ]
     }
@@ -86,7 +88,16 @@ const init = () => {
         // update role function
         updateEmployeeManager();
         break;
+      
+      case "View Employees by Manager":
+        // view employee by manager function
+        viewEmployeesByManager();
+        break;
 
+      case "View Employees by Department":
+        viewEmployeesByDepartment();
+        break;
+        
       case "Exit":
         // end connection
         db.end();
@@ -420,4 +431,99 @@ const updateEmployeeManager = () => {
       });
   });
 };
+
+
+// View employees by manager
+const viewEmployeesByManager = () => {
+  // Query the database to get a list of all managers
+  db.query(`SELECT DISTINCT manager_id, 
+  (SELECT CONCAT(employee_first_name, ' ', employee_last_name)
+  FROM employees m WHERE m.employee_id = e.manager_id) AS manager_name
+  FROM employees e
+  WHERE e.manager_id IS NOT NULL`, (err, managersResult) => {
+    if (err) throw err;
+
+    // Prompt the user to select a manager
+    inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "selected_manager",
+          message: "Select the manager to view employees:",
+          choices: managersResult.map((manager) => ({
+            name: manager.manager_name,
+            value: manager.manager_id,
+          })),
+        },
+      ])
+      .then((answers) => {
+        // Query the database to get employees based on the selected manager
+        db.query(
+          `SELECT e.employee_id, e.employee_first_name, e.employee_last_name, r.job_title, d.department_name, r.role_salary, CONCAT(m.employee_first_name, ' ', m.employee_last_name) AS manager_name
+          FROM employees e
+          JOIN roles r ON e.role_id = r.role_id
+          JOIN departments d ON r.department_id = d.department_id
+          LEFT JOIN employees m ON e.manager_id = m.employee_id
+          WHERE e.manager_id = ?`,
+          [ answers.selected_manager ],
+          (err, employeesResult) => {
+            if (err) throw err;
+            // console.log(answers.selected_manager);
+            // Display the list of employees under the selected manager
+            console.log(`Employees under Manager ID ${answers.selected_manager}:`);
+            console.table(employeesResult);
+
+            // Restart the application
+            init();
+          }
+        );
+      });
+  });
+};
+
+
+// View employees by department
+const viewEmployeesByDepartment = () => {
+  // Query the database to get a list of all departments
+  db.query("SELECT DISTINCT department_id, department_name FROM departments", (err, departmentsResult) => {
+    if (err) throw err;
+
+    // Prompt the user to select a department
+    inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "selected_department",
+          message: "Select the department to view employees:",
+          choices: departmentsResult.map((department) => ({
+            name: department.department_name,
+            value: department.department_id,
+          })),
+        },
+      ])
+      .then((answers) => {
+        // Query the database to get employees based on the selected department
+        db.query(
+          `SELECT e.employee_id, e.employee_first_name, e.employee_last_name, r.job_title, d.department_name, r.role_salary, CONCAT(m.employee_first_name, ' ', m.employee_last_name) AS manager_name
+          FROM employees e
+          JOIN roles r ON e.role_id = r.role_id
+          JOIN departments d ON r.department_id = d.department_id
+          LEFT JOIN employees m ON e.manager_id = m.employee_id
+          WHERE d.department_id = ?`,
+          [ answers.selected_department ],
+          (err, employeesResult) => {
+            if (err) throw err;
+
+            // Display the list of employees in the selected department
+            console.log(`Employees in Department ${answers.selected_department}:`);
+            console.table(employeesResult);
+
+            // Restart the application
+            init();
+          }
+        );
+      });
+  });
+};
+
 
