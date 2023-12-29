@@ -52,8 +52,8 @@ const init = () => {
         break;
 
       case "Add Department":
-        console.log('add department');
         // add department function
+        addDepartment();
         break;
 
       case "View All Roles":
@@ -62,8 +62,9 @@ const init = () => {
         break;   
 
       case "Add Role":
-        console.log('add role');
+        //console.log('add role');
         // Add role function
+        addRole();
         break;
 
       case "View All Employees":
@@ -116,8 +117,34 @@ const viewAllDepartments = () => {
   init();
 };
 
-// Add a department
+// Add a department - prompted to enter the name of the department and that department is added to the database
+const addDepartment = () => {
 
+  inquirer
+  .prompt([
+    {
+      type: "input",
+      name: "department_name",
+      message: "Enter the name of the new department."
+    }
+  ])
+  .then((answers) => {
+
+    const depName = [ answers.department_name ];
+    db.query(
+  `INSERT INTO departments (department_name) 
+  VALUES (?)`, depName, function (err, results) {
+
+    if (err) throw err;
+      console.log(`Added ${answers.department_name} to the departments table!`);
+
+      // display updated department table
+      viewAllDepartments();
+      } 
+    );
+  })
+
+};
 
 // view all roles
 const viewAllRoles = () => {
@@ -135,7 +162,62 @@ const viewAllRoles = () => {
   init();
 };
 
-// add a role
+// add a role - prompted to enter the name, salary, and department for the role and that role is added to the database
+const addRole = () => {
+
+  db.query("SELECT * FROM departments", (err, res) => {
+
+    if (err) throw err;
+
+    inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "role_name",
+        message: "Enter the name of the new role."
+      },
+      {
+        type: "input",
+        name: "role_salary",
+        message: "Enter the salary of the role."
+      },
+      {
+        type: "list",
+        name: "department_name",
+        message: "Select the name of the new role's department.",
+        choices: res.map (
+          (department) => department.department_name
+        )
+      },
+    ])
+    .then((answers) => {
+
+      const department = res.find(
+        (departments) => departments.department_name === answers.department_name
+      );
+
+      // console.log (department.department_id);
+
+      const newRole = [ 
+        answers.role_name, 
+        answers.role_salary, 
+        department.department_id
+      ];
+
+      db.query(
+    `INSERT INTO roles (job_title, role_salary, department_id) 
+    VALUES (?)`, [newRole], function (err, results) {
+
+      if (err) throw err;
+        console.log(`Added ${answers.role_name} to the roles table!`);
+
+        // display updated roles table
+        viewAllRoles();
+        } 
+      );
+    })
+  });
+}; 
 
 
 // view all employees
@@ -158,12 +240,13 @@ const viewAllEmployees = () => {
     init();
 };
 
-// add a department - prompted to enter the name of the department and that department is added to the database
-// db.query(
-//   `INSERT INTO departments (department_name) 
-//   VALUES 
-//   ();`
-// );
+// add employee
+
+
+// update employee role
+
+
+
 
 // add a role - prompted to enter the name, salary, and department for the role and that role is added to the database
 
