@@ -39,6 +39,7 @@ const init = () => {
         "View All Employees",
         "Add Employee",
         "Update Employee Role",
+        "Update Employee Manager",
         "Exit"
       ]
     }
@@ -77,8 +78,13 @@ const init = () => {
         break;
       
       case "Update Employee Role":
-        console.log('update role');
         // update role function
+        updateEmployeeRole();
+        break;
+
+      case "Update Employee Manager":
+        // update role function
+        updateEmployeeManager();
         break;
 
       case "Exit":
@@ -207,7 +213,7 @@ const addRole = () => {
     VALUES (?)`, [newRole], function (err, results) {
 
       if (err) throw err;
-        console.log(`Added ${answers.role_name} to the roles table!`);
+        console.log(`\nAdded ${answers.role_name} to the roles table!`);
 
         // display updated roles table
         viewAllRoles();
@@ -228,9 +234,9 @@ const viewAllEmployees = () => {
     JOIN departments d ON r.department_id = d.department_id
     LEFT JOIN employees m ON e.manager_id = m.employee_id
     ;`,
-    function (err, results) {
-      console.log('Here are all employees');
-      console.table(results);
+    function (err, res) {
+      console.log('\nHere are all employees');
+      console.table(res);
     }
   );
 
@@ -244,6 +250,7 @@ const addEmployee = () => {
     if (err) throw err;
 
     db.query("SELECT employee_id, CONCAT(employee_first_name, ' ', employee_last_name) AS manager_name FROM employees", (err, managersResult) => {
+
       if (err) throw err;
 
       inquirer
@@ -306,7 +313,111 @@ const addEmployee = () => {
   });
 };
 
-
-
-
 // update an employee role - prompted to select an employee to update and their new role and this information is updated in the database
+
+const updateEmployeeRole = () => {
+
+  db.query("SELECT * FROM employees", (err, employeesResult) => {
+    if (err) throw err;
+
+    db.query("SELECT role_id, job_title FROM roles", (err, rolesResult) => {
+      if (err) throw err;
+
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "employee_name",
+            message: "Select the employee to update:",
+            choices: employeesResult.map((employee) => ({
+              name: `${employee.employee_first_name} ${employee.employee_last_name}`,
+              value: employee.employee_id,
+            })),
+          },
+          {
+            type: "list",
+            name: "new_role",
+            message: "Select the employee's new role:",
+            choices: rolesResult.map((role) => role.job_title),
+          },
+        ])
+        .then((answers) => {
+          const selectedEmployee = employeesResult.find(
+            (employee) => employee.employee_id === answers.employee_name
+          );
+
+          const selectedRole = rolesResult.find(
+            (role) => role.job_title === answers.new_role
+          );
+
+          db.query(
+            `UPDATE employees SET role_id = ? WHERE employee_id = ?`,
+            [ selectedRole.role_id, selectedEmployee.employee_id ],
+            function (err, results) {
+              if (err) throw err;
+              console.log(
+                `Updated role for ${selectedEmployee.employee_first_name} ${selectedEmployee.employee_last_name} to ${answers.new_role}!`
+              );
+
+              // Display updated employees table
+              viewAllEmployees();
+            }
+          );
+        });
+    });
+  });
+};
+
+// update employee managers
+const updateEmployeeManager = () => {
+
+  db.query("SELECT * FROM employees", (err, employeesResult) => {
+    if (err) throw err;
+
+    inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "employee_name",
+          message: "Select the employee to update:",
+          choices: employeesResult.map((employee) => ({
+            name: `${employee.employee_first_name} ${employee.employee_last_name}`,
+            value: employee.employee_id,
+          })),
+        },
+        {
+          type: "list",
+          name: "new_manager",
+          message: "Select the employee's new manager:",
+          choices: employeesResult.map((employee) => ({
+            name: `${employee.employee_first_name} ${employee.employee_last_name}`,
+            value: employee.employee_id,
+          })),
+        },
+      ])
+      .then((answers) => {
+        const selectedEmployee = employeesResult.find(
+          (employee) => employee.employee_id === answers.employee_name
+        );
+
+        const selectedManager = employeesResult.find(
+          (manager) => manager.employee_id === answers.new_manager
+        );
+
+        db.query(
+          `UPDATE employees SET manager_id = ? WHERE employee_id = ?`,
+          [ selectedManager.employee_id, selectedEmployee.employee_id ],
+          function (err, results) {
+            if (err) throw err;
+            console.log(
+              `Updated manager for ${selectedEmployee.employee_first_name} ${selectedEmployee.employee_last_name} to ${answers.new_manager}!`
+            );
+
+            // Display updated employees table
+            viewAllEmployees();
+          }
+        );
+      });
+  });
+};
+
