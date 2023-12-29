@@ -62,20 +62,18 @@ const init = () => {
         break;   
 
       case "Add Role":
-        //console.log('add role');
         // Add role function
         addRole();
         break;
 
       case "View All Employees":
-        console.log('view employees');
         // view employees function
         viewAllEmployees();
         break;
 
       case "Add Employee":
-        console.log('add employee');
         // add employee function
+        addEmployee();
         break;
       
       case "Update Employee Role":
@@ -240,18 +238,75 @@ const viewAllEmployees = () => {
     init();
 };
 
-// add employee
+// add employee - prompted to enter the employee’s first name, last name, role, and manager, and that employee is added to the database
+const addEmployee = () => {
+  db.query("SELECT role_id, job_title FROM roles", (err, rolesResult) => {
+    if (err) throw err;
+
+    db.query("SELECT employee_id, CONCAT(employee_first_name, ' ', employee_last_name) AS manager_name FROM employees", (err, managersResult) => {
+      if (err) throw err;
+
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            name: "first_name",
+            message: "Enter the new employee's first name."
+          },
+          {
+            type: "input",
+            name: "last_name",
+            message: "Enter the new employee's last name."
+          },
+          {
+            type: "list",
+            name: "job_title",
+            message: "Select the new employee's job title.",
+            choices: rolesResult.map((jobTitles) => jobTitles.job_title)
+          },
+          {
+            type: "list",
+            name: "manager_name",
+            message: "Select the new employee's manager.",
+            choices: [
+              { name: "None", value: null },
+              ...managersResult.map((manager) => ({ name: manager.manager_name, value: manager.employee_id })),
+            ]
+          },
+        ])
+        .then((answers) => {
+          const selectedRole = rolesResult.find(
+            (role) => role.job_title === answers.job_title
+          );
+
+          const selectedManager = managersResult.find(
+            (manager) => manager.employee_id === answers.manager_name
+          );
+
+          const newEmployee = [
+            answers.first_name,
+            answers.last_name,
+            selectedRole.role_id,
+            selectedManager ? selectedManager.employee_id : null,
+          ];
+
+          db.query(
+            `INSERT INTO employees (employee_first_name, employee_last_name, role_id, manager_id) VALUES (?)`,
+            [newEmployee],
+            function (err, results) {
+              if (err) throw err;
+              console.log(`Added ${answers.first_name} ${answers.last_name} to the employees table!`);
+
+              // Display updated employees table
+              viewAllEmployees();
+            }
+          );
+        });
+    });
+  });
+};
 
 
-// update employee role
-
-
-
-
-// add a role - prompted to enter the name, salary, and department for the role and that role is added to the database
-
-
-// add an employee - prompted to enter the employee’s first name, last name, role, and manager, and that employee is added to the database
 
 
 // update an employee role - prompted to select an employee to update and their new role and this information is updated in the database
