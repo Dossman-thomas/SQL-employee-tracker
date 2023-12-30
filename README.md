@@ -20,7 +20,6 @@ Additional functionality to update employee role or manager, to view employees b
 - [Screenshots](#screenshots)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Testing](#testing)
 - [Technologies](#technologies)
 - [Questions](#questions)
 
@@ -31,14 +30,18 @@ Additional functionality to update employee role or manager, to view employees b
 [Link to Demonstration video]()
 
 ## Screenshots
-### 
-![Screenshot 1]()
-### 
-![Screenshot 2]()
-### 
-![Screenshot 3]()
-### 
-![Screenshot 4]()
+### Entity Relationship Diagram
+![ERD](./media/Employee_Tracker_Entity_Relationship_Diagram.png)
+### Home Screen
+![Home Screen](./media/employee_tracker_Opening.png)
+### Add Department Functionality Example
+![Usage1](./media/employee_tracker_usage.png)
+### Viewing Employee by Manager Functionality Example
+![Usage2](./media/employee_tracker_usage2.png)
+### Viewing Utilized Budget Example
+![Usage2](./media/employee_tracker_usage3.png)
+### Closing the App
+![exit](./media/employee_tracker_exit.png)
 
 ## Installation
 
