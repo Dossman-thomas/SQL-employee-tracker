@@ -1,3 +1,4 @@
+// export all queries
 module.exports = {
   ALL_DEPARTMENTS_QUERY: 'SELECT * FROM departments',
   ADD_DEPARTMENT_QUERY: 'INSERT INTO departments (department_name) VALUES (?)',
