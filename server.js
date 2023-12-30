@@ -45,6 +45,7 @@ const init = () => {
         "Delete Employee",
         "Delete Role",
         "Delete Department",
+        "View Utilized Budget by Department",
         "Exit"
       ]
     }
@@ -115,6 +116,11 @@ const init = () => {
       case "Delete Department":
         // delete department function
         deleteDepartment();
+        break;
+      
+      case "View Utilized Budget by Department":
+        // view budget function
+        viewBudgetByDepartment();
         break;
 
       case "Exit":
@@ -699,6 +705,49 @@ const deleteDepartment = () => {
                 }
               );
             }
+          }
+        );
+      });
+  });
+};
+
+const viewBudgetByDepartment = () => {
+  // Query the database to get a list of all departments
+  db.query("SELECT DISTINCT department_id, department_name FROM departments", (err, departmentsResult) => {
+    if (err) throw err;
+
+    // Prompt the user to select a department
+    inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "selected_department",
+          message: "Select the department to view utilized budget:",
+          choices: departmentsResult.map((department) => ({
+            name: department.department_name,
+            value: department.department_id,
+          })),
+        },
+      ])
+      .then((answers) => {
+        // Query the database to get budget based on the selected department
+        db.query(
+          `SELECT d.department_name, SUM(r.role_salary) AS utilized_budget
+          FROM employees e
+          JOIN roles r ON e.role_id = r.role_id
+          JOIN departments d ON r.department_id = d.department_id
+          WHERE d.department_id = ?`,
+          [ answers.selected_department ],
+          (err, budgetResult) => {
+
+            if (err) throw err;
+
+            // Display the list of employees in the selected department
+            console.log(`Here's the utilized_budget for the ${answers.selected_department} department:`);
+            console.table(budgetResult);
+
+            // Restart the application
+            init();
           }
         );
       });
