@@ -2,6 +2,7 @@
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
 const table = require('table');
+const constants = require('./db/constants');
 
 
 // Connect to database
@@ -146,7 +147,7 @@ const init = () => {
 const viewAllDepartments = () => {
 
   db.query(
-    'SELECT * FROM departments',
+    constants.ALL_DEPARTMENTS_QUERY,
      function (err, results) {
       console.log('Here are all company departments');
       console.table(results);
@@ -172,8 +173,9 @@ const addDepartment = () => {
 
     const depName = [ answers.department_name ];
     db.query(
-  `INSERT INTO departments (department_name) 
-  VALUES (?)`, depName, function (err, results) {
+    constants.ADD_DEPARTMENT_QUERY,
+    depName,
+    function (err, results) {
 
     if (err) throw err;
       console.log(`Added ${answers.department_name} to the departments table!`);
@@ -190,8 +192,7 @@ const addDepartment = () => {
 const viewAllRoles = () => {
 
   db.query(
-    `SELECT r.role_id, r.job_title, d.department_name, r.role_salary FROM roles r
-    JOIN departments d ON r.department_id = d.department_id;`, 
+    constants.ALL_ROLES_QUERY, 
     function (err, results) {
       console.log('Here are all department roles');
       console.table(results);
@@ -205,7 +206,9 @@ const viewAllRoles = () => {
 // add a role - prompted to enter the name, salary, and department for the role and that role is added to the database
 const addRole = () => {
 
-  db.query("SELECT * FROM departments", (err, res) => {
+  db.query(
+    constants.ALL_DEPARTMENTS_QUERY,
+    (err, res) => {
 
     if (err) throw err;
 
@@ -245,8 +248,9 @@ const addRole = () => {
       ];
 
       db.query(
-    `INSERT INTO roles (job_title, role_salary, department_id) 
-    VALUES (?)`, [newRole], function (err, results) {
+      constants.ADD_ROLE_QUERY,
+      [newRole], 
+      function (err, results) {
 
       if (err) throw err;
         console.log(`\nAdded ${answers.role_name} to the roles table!`);
@@ -264,12 +268,7 @@ const addRole = () => {
 const viewAllEmployees = () => {
 
   db.query(
-    `SELECT e.employee_id, e.employee_first_name, e.employee_last_name, r.job_title, d.department_name, r.role_salary, CONCAT(m.employee_first_name, ' ', m.employee_last_name) AS manager_name
-    FROM employees e
-    JOIN roles r ON e.role_id = r.role_id
-    JOIN departments d ON r.department_id = d.department_id
-    LEFT JOIN employees m ON e.manager_id = m.employee_id
-    ;`,
+    constants.ALL_EMPLOYEES_QUERY,
     function (err, res) {
       console.log('\nHere are all employees');
       console.table(res);
@@ -282,10 +281,14 @@ const viewAllEmployees = () => {
 
 // add employee - prompted to enter the employee’s first name, last name, role, and manager, and that employee is added to the database
 const addEmployee = () => {
-  db.query("SELECT role_id, job_title FROM roles", (err, rolesResult) => {
+  db.query(
+    constants.ALL_ROLES_QUERY, 
+    (err, rolesResult) => {
     if (err) throw err;
 
-    db.query("SELECT employee_id, CONCAT(employee_first_name, ' ', employee_last_name) AS manager_name FROM employees", (err, managersResult) => {
+    db.query(
+      constants.VIEW_EMPLOYEES_FULL_NAME_QUERY,
+      (err, managersResult) => {
 
       if (err) throw err;
 
@@ -334,7 +337,7 @@ const addEmployee = () => {
           ];
 
           db.query(
-            `INSERT INTO employees (employee_first_name, employee_last_name, role_id, manager_id) VALUES (?)`,
+            constants.ADD_EMPLOYEE_QUERY,
             [newEmployee],
             function (err, results) {
               if (err) throw err;
@@ -353,10 +356,14 @@ const addEmployee = () => {
 
 const updateEmployeeRole = () => {
 
-  db.query("SELECT * FROM employees", (err, employeesResult) => {
+  db.query(
+    constants.ALL_EMPLOYEES_QUERY, 
+    (err, employeesResult) => {
     if (err) throw err;
 
-    db.query("SELECT role_id, job_title FROM roles", (err, rolesResult) => {
+    db.query(
+      constants.ALL_ROLES_QUERY,
+      (err, rolesResult) => {
       if (err) throw err;
 
       inquirer
@@ -387,7 +394,7 @@ const updateEmployeeRole = () => {
           );
 
           db.query(
-            `UPDATE employees SET role_id = ? WHERE employee_id = ?`,
+            constants.UPDATE_EMPLOYEE_ROLE_QUERY,
             [ selectedRole.role_id, selectedEmployee.employee_id ],
             function (err, results) {
               if (err) throw err;
@@ -407,7 +414,9 @@ const updateEmployeeRole = () => {
 // update employee managers
 const updateEmployeeManager = () => {
 
-  db.query("SELECT * FROM employees", (err, employeesResult) => {
+  db.query(
+    constants.ALL_EMPLOYEES_QUERY, 
+    (err, employeesResult) => {
     if (err) throw err;
 
     inquirer
@@ -441,7 +450,7 @@ const updateEmployeeManager = () => {
         );
 
         db.query(
-          `UPDATE employees SET manager_id = ? WHERE employee_id = ?`,
+          constants.UPDATE_EMPLOYEE_MANAGER_QUERY,
           [ selectedManager.employee_id, selectedEmployee.employee_id ],
           function (err, results) {
             if (err) throw err;
@@ -461,11 +470,9 @@ const updateEmployeeManager = () => {
 // View employees by manager
 const viewEmployeesByManager = () => {
   // Query the database to get a list of all managers
-  db.query(`SELECT DISTINCT manager_id, 
-  (SELECT CONCAT(employee_first_name, ' ', employee_last_name)
-  FROM employees m WHERE m.employee_id = e.manager_id) AS manager_name
-  FROM employees e
-  WHERE e.manager_id IS NOT NULL`, (err, managersResult) => {
+  db.query(
+    constants.VIEW_EMPLOYEES_BY_MANAGER_QUERY,
+    (err, managersResult) => {
     if (err) throw err;
 
     // Prompt the user to select a manager
@@ -484,12 +491,7 @@ const viewEmployeesByManager = () => {
       .then((answers) => {
         // Query the database to get employees based on the selected manager
         db.query(
-          `SELECT e.employee_id, e.employee_first_name, e.employee_last_name, r.job_title, d.department_name, r.role_salary, CONCAT(m.employee_first_name, ' ', m.employee_last_name) AS manager_name
-          FROM employees e
-          JOIN roles r ON e.role_id = r.role_id
-          JOIN departments d ON r.department_id = d.department_id
-          LEFT JOIN employees m ON e.manager_id = m.employee_id
-          WHERE e.manager_id = ?`,
+          constants.VIEW_EMPLOYEES_BY_SELECTED_MANAGER_QUERY,
           [ answers.selected_manager ],
           (err, employeesResult) => {
             if (err) throw err;
@@ -510,7 +512,9 @@ const viewEmployeesByManager = () => {
 // View employees by department
 const viewEmployeesByDepartment = () => {
   // Query the database to get a list of all departments
-  db.query("SELECT DISTINCT department_id, department_name FROM departments", (err, departmentsResult) => {
+  db.query(
+    constants.ALL_DEPARTMENTS_QUERY, 
+    (err, departmentsResult) => {
     if (err) throw err;
 
     // Prompt the user to select a department
@@ -529,12 +533,7 @@ const viewEmployeesByDepartment = () => {
       .then((answers) => {
         // Query the database to get employees based on the selected department
         db.query(
-          `SELECT e.employee_id, e.employee_first_name, e.employee_last_name, r.job_title, d.department_name, r.role_salary, CONCAT(m.employee_first_name, ' ', m.employee_last_name) AS manager_name
-          FROM employees e
-          JOIN roles r ON e.role_id = r.role_id
-          JOIN departments d ON r.department_id = d.department_id
-          LEFT JOIN employees m ON e.manager_id = m.employee_id
-          WHERE d.department_id = ?`,
+          constants.VIEW_EMPLOYEES_BY_DEPARTMENT_QUERY,
           [ answers.selected_department ],
           (err, employeesResult) => {
             if (err) throw err;
@@ -554,7 +553,9 @@ const viewEmployeesByDepartment = () => {
 // Delete employee
 const deleteEmployee = () => {
 
-  db.query("SELECT * FROM employees", (err, employeesResult) => {
+  db.query(
+    constants.ALL_EMPLOYEES_QUERY, 
+    (err, employeesResult) => {
     if (err) throw err;
 
     inquirer
@@ -575,7 +576,7 @@ const deleteEmployee = () => {
         );
 
         db.query(
-          `DELETE FROM employees WHERE employee_id = ?`,
+          constants.DELETE_EMPLOYEE_QUERY,
           [ selectedEmployee.employee_id ],
           function (err, results) {
             if (err) throw err;
@@ -595,7 +596,9 @@ const deleteEmployee = () => {
 // delete role
 const deleteRole = () => {
   // Query the database to get a list of all roles
-  db.query("SELECT * FROM roles", (err, rolesResult) => {
+  db.query(
+    constants.ALL_ROLES_QUERY,
+    (err, rolesResult) => {
     if (err) throw err;
 
     inquirer
@@ -617,7 +620,7 @@ const deleteRole = () => {
 
         // Check if there are any employees in the selected role
         db.query(
-          "SELECT * FROM employees WHERE role_id = ?",
+          constants.VIEW_EMPLOYEES_BY_ROLE_QUERY,
           [selectedRole.role_id],
           (err, employeesResult) => {
             if (err) throw err;
@@ -631,7 +634,7 @@ const deleteRole = () => {
             } else {
               // No employees in the role, proceed with deletion
               db.query(
-                "DELETE FROM roles WHERE role_id = ?",
+                constants.DELETE_ROLE_QUERY,
                 [selectedRole.role_id],
                 (err, results) => {
                   if (err) throw err;
@@ -653,7 +656,9 @@ const deleteRole = () => {
 // delete department
 const deleteDepartment = () => {
   // Query the database to get a list of all departments
-  db.query("SELECT * FROM departments", (err, departmentsResult) => {
+  db.query(
+    constants.ALL_DEPARTMENTS_QUERY,
+    (err, departmentsResult) => {
 
     if (err) throw err;
 
@@ -676,7 +681,7 @@ const deleteDepartment = () => {
 
         // Check if there are any roles in the selected department
         db.query(
-          "SELECT * FROM roles WHERE department_id = ?",
+          constants.VIEW_ROLES_BY_DEPARTMENT,
           [ selectedDepartment.department_id ],
           (err, rolesResult) => {
 
@@ -692,7 +697,7 @@ const deleteDepartment = () => {
             } else {
               // No roles in the department, proceed with deletion
               db.query(
-                "DELETE FROM departments WHERE department_id = ?",
+                constants.DELETE_DEPARTMENT_QUERY,
                 [ selectedDepartment.department_id ],
                 (err, results) => {
                   if (err) throw err;
@@ -713,7 +718,9 @@ const deleteDepartment = () => {
 
 const viewBudgetByDepartment = () => {
   // Query the database to get a list of all departments
-  db.query("SELECT DISTINCT department_id, department_name FROM departments", (err, departmentsResult) => {
+  db.query(
+    constants.ALL_DEPARTMENTS_QUERY, 
+    (err, departmentsResult) => {
     if (err) throw err;
 
     // Prompt the user to select a department
@@ -732,11 +739,7 @@ const viewBudgetByDepartment = () => {
       .then((answers) => {
         // Query the database to get budget based on the selected department
         db.query(
-          `SELECT d.department_name, SUM(r.role_salary) AS utilized_budget
-          FROM employees e
-          JOIN roles r ON e.role_id = r.role_id
-          JOIN departments d ON r.department_id = d.department_id
-          WHERE d.department_id = ?`,
+          constants.VIEW_BUDGET_BY_DEPARTMENT_QUERY,
           [ answers.selected_department ],
           (err, budgetResult) => {
 
