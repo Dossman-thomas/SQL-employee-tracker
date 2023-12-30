@@ -25,9 +25,9 @@ Additional functionality to update employee role or manager, to view employees b
 
 ## Demonstration
 
-![Employee Tracker Demo]()
+![Employee Tracker Demo](./media/Employee_tracker_demo_gif.gif)
 
-[Link to Demonstration video]()
+[Link to Demonstration video](https://clipchamp.com/watch/fBaf7pnyU2S)
 
 ## Screenshots
 ### Entity Relationship Diagram
