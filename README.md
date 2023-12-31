@@ -10,7 +10,7 @@ This project is licensed under the [MIT License] - see [LICENSE](LICENSE) file f
 
 A Node.js command-line application that allows users to manage a company database using Inquirer and MySQL. Users can view, add, and delete departments, roles, and employees.  
 
-Additional functionality to update employee role or manager, to view employees by manager or department, and to view a utilitized budget by department is included as well. 
+Additional functionality to update employee role or manager, to view employees by manager or department, and to view a utilized budget by department is included as well. 
 
 ## Table of Contents
 
